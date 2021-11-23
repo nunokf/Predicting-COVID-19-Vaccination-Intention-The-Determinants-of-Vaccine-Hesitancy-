@@ -1,10 +1,11 @@
 ---
-title: "rmarkdown_vaccination_git"
-author: "Nuno Fernandes"
-date: "09/10/2021"
-output: github_document
+title: "Vaccination"
+output:
+  keep_md: yes
+  rmarkdown:html_document
+    
 ---
-### Import data & library
+## Import data & library
 
 ### setup wd
 ```{r setup, include=FALSE, echo=FALSE}
