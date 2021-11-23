@@ -5,6 +5,8 @@ Nuno Fernandes
 
 ### Import data & library
 
+### setup wd
+
 ### read.csv
 
 ``` r
@@ -1000,3 +1002,709 @@ lm.beta(modelfilhos2)
     ##               0.00000000               0.09257403              -0.04253226 
     ## covid2$beliefs_attitudes 
     ##               0.72112898
+
+## Python
+
+### multiprocessing
+
+``` r
+sys <- import("sys")
+exe <- file.path(sys$exec_prefix, "pythonw.exe")
+sys$executable <- exe
+sys$`_base_executable` <- exe
+
+multiprocessing <- import("multiprocessing")
+multiprocessing$set_executable(exe)
+```
+
+### library
+
+``` python
+import pandas as pd 
+import seaborn as sns 
+import matplotlib as plt
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn import svm
+from sklearn.neural_network import MLPClassifier
+from sklearn.metrics import confusion_matrix, classification_report
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import scale 
+from sklearn import decomposition
+from matplotlib import pyplot as plt
+import plotly.express as px
+import numpy as np
+from sklearn.model_selection import cross_val_score, StratifiedKFold, KFold
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import GridSearchCV
+import statsmodels.formula.api as smf
+import textwrap
+```
+
+### read & cleaning
+
+``` python
+vac = pd.read_csv(r"C:\Users\nunok\Documents\2021\Vacinação\Data\EXCEL\covid_15_03.csv",sep=',')
+
+#col to numeric
+vac_2 = vac.apply(pd.to_numeric, errors='coerce')
+
+#drop NA
+vac_2 = vac_2.dropna(subset=['Q70_30'])
+vac_2 = vac_2.dropna(subset=['Q62_20'])
+vac_2 = vac_2.dropna(subset=['Q56_1'])
+vac_2 = vac_2[vac_2["Q4"]>17]
+vac_2 = vac_2.dropna(subset=['Q54'])
+```
+
+### Glm own&children\~general beliefs and attitudes
+
+``` python
+# children vaccination
+vac_2[['Q55','Q66','Q75']]=vac_2[['Q55','Q66','Q75']].fillna(0)
+vac_2["children"] = vac_2["Q55"] + vac_2["Q66"] + vac_2["Q75"]
+
+# select variables and target
+vac_2= vac_2[['Q62_1','Q62_2','Q62_3','Q62_4','Q62_5','Q62_6','Q62_7','Q62_8','Q62_9','Q62_15','Q62_16','Q62_17','Q62_18','Q62_19','Q54',"children"]]
+
+#global dataset
+mod_own = smf.ols(formula='Q54 ~ Q62_1 + Q62_2 + Q62_3 + Q62_4 + Q62_5 + Q62_6 + Q62_7 + Q62_8 + Q62_9 + Q62_15 + Q62_16 + Q62_17 + Q62_18 + Q62_19', data=vac_2)
+
+mod_children = smf.ols(formula='children ~ Q62_1 + Q62_2 + Q62_3 + Q62_4 + Q62_5 + Q62_6 + Q62_7 + Q62_8 + Q62_9 + Q62_15 + Q62_16 + Q62_17 + Q62_18 + Q62_19', data=vac_2)
+
+res_own = mod_own.fit()
+res_children = mod_children.fit()
+
+res_own.summary()
+```
+
+    ## <class 'statsmodels.iolib.summary.Summary'>
+    ## """
+    ##                             OLS Regression Results                            
+    ## ==============================================================================
+    ## Dep. Variable:                    Q54   R-squared:                       0.692
+    ## Model:                            OLS   Adj. R-squared:                  0.686
+    ## Method:                 Least Squares   F-statistic:                     101.9
+    ## Date:                Tue, 23 Nov 2021   Prob (F-statistic):          8.05e-152
+    ## Time:                        15:06:02   Log-Likelihood:                -856.54
+    ## No. Observations:                 649   AIC:                             1743.
+    ## Df Residuals:                     634   BIC:                             1810.
+    ## Df Model:                          14                                         
+    ## Covariance Type:            nonrobust                                         
+    ## ==============================================================================
+    ##                  coef    std err          t      P>|t|      [0.025      0.975]
+    ## ------------------------------------------------------------------------------
+    ## Intercept      1.4101      0.360      3.922      0.000       0.704       2.116
+    ## Q62_1          0.0889      0.021      4.295      0.000       0.048       0.130
+    ## Q62_2          0.0114      0.027      0.423      0.672      -0.041       0.064
+    ## Q62_3          0.0486      0.032      1.517      0.130      -0.014       0.112
+    ## Q62_4          0.1188      0.024      4.861      0.000       0.071       0.167
+    ## Q62_5          0.2562      0.032      7.941      0.000       0.193       0.320
+    ## Q62_6          0.0119      0.024      0.499      0.618      -0.035       0.059
+    ## Q62_7          0.0229      0.025      0.911      0.363      -0.027       0.072
+    ## Q62_8         -0.0654      0.024     -2.702      0.007      -0.113      -0.018
+    ## Q62_9         -0.1257      0.032     -3.949      0.000      -0.188      -0.063
+    ## Q62_15         0.0016      0.046      0.035      0.972      -0.089       0.092
+    ## Q62_16         0.0570      0.046      1.236      0.217      -0.034       0.148
+    ## Q62_17         0.0419      0.025      1.645      0.100      -0.008       0.092
+    ## Q62_18         0.2541      0.036      6.972      0.000       0.183       0.326
+    ## Q62_19         0.0686      0.032      2.176      0.030       0.007       0.131
+    ## ==============================================================================
+    ## Omnibus:                       70.546   Durbin-Watson:                   1.951
+    ## Prob(Omnibus):                  0.000   Jarque-Bera (JB):              191.836
+    ## Skew:                          -0.549   Prob(JB):                     2.20e-42
+    ## Kurtosis:                       5.427   Cond. No.                         185.
+    ## ==============================================================================
+    ## 
+    ## Notes:
+    ## [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    ## """
+
+``` python
+res_children.summary()
+
+# predict & test subset
+```
+
+    ## <class 'statsmodels.iolib.summary.Summary'>
+    ## """
+    ##                             OLS Regression Results                            
+    ## ==============================================================================
+    ## Dep. Variable:               children   R-squared:                       0.605
+    ## Model:                            OLS   Adj. R-squared:                  0.597
+    ## Method:                 Least Squares   F-statistic:                     69.44
+    ## Date:                Tue, 23 Nov 2021   Prob (F-statistic):          8.06e-118
+    ## Time:                        15:06:02   Log-Likelihood:                -978.79
+    ## No. Observations:                 649   AIC:                             1988.
+    ## Df Residuals:                     634   BIC:                             2055.
+    ## Df Model:                          14                                         
+    ## Covariance Type:            nonrobust                                         
+    ## ==============================================================================
+    ##                  coef    std err          t      P>|t|      [0.025      0.975]
+    ## ------------------------------------------------------------------------------
+    ## Intercept      1.3309      0.434      3.066      0.002       0.479       2.183
+    ## Q62_1          0.1424      0.025      5.699      0.000       0.093       0.191
+    ## Q62_2          0.0079      0.032      0.242      0.809      -0.056       0.072
+    ## Q62_3          0.0432      0.039      1.118      0.264      -0.033       0.119
+    ## Q62_4          0.1284      0.029      4.353      0.000       0.070       0.186
+    ## Q62_5          0.2153      0.039      5.527      0.000       0.139       0.292
+    ## Q62_6          0.0103      0.029      0.358      0.720      -0.046       0.067
+    ## Q62_7          0.0380      0.030      1.249      0.212      -0.022       0.098
+    ## Q62_8         -0.1003      0.029     -3.431      0.001      -0.158      -0.043
+    ## Q62_9         -0.1271      0.038     -3.309      0.001      -0.203      -0.052
+    ## Q62_15        -0.0571      0.056     -1.023      0.307      -0.167       0.052
+    ## Q62_16         0.1876      0.056      3.368      0.001       0.078       0.297
+    ## Q62_17        -0.0012      0.031     -0.038      0.970      -0.062       0.059
+    ## Q62_18         0.2242      0.044      5.094      0.000       0.138       0.311
+    ## Q62_19         0.0555      0.038      1.458      0.145      -0.019       0.130
+    ## ==============================================================================
+    ## Omnibus:                       98.186   Durbin-Watson:                   2.035
+    ## Prob(Omnibus):                  0.000   Jarque-Bera (JB):              255.505
+    ## Skew:                          -0.776   Prob(JB):                     3.29e-56
+    ## Kurtosis:                       5.654   Cond. No.                         185.
+    ## ==============================================================================
+    ## 
+    ## Notes:
+    ## [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    ## """
+
+``` python
+predict, validate = train_test_split(vac_2, test_size=0.2, random_state=42)
+
+# predict
+mod_own_discovery = smf.ols(formula='Q54 ~ Q62_1 + Q62_2 + Q62_3 + Q62_4 + Q62_5 + Q62_6 + Q62_7 + Q62_8 + Q62_9 + Q62_15 + Q62_16 + Q62_17 + Q62_18 + Q62_19', data=predict)
+mod_children_discovery = smf.ols(formula='children ~ Q62_1 + Q62_2 + Q62_3 + Q62_4 + Q62_5 + Q62_6 + Q62_7 + Q62_8 + Q62_9 + Q62_15 + Q62_16 + Q62_17 + Q62_18 + Q62_19', data=predict)
+res_own_discovery = mod_own_discovery.fit()
+res_children_discovery = mod_children_discovery.fit()
+
+res_own_discovery.summary()
+```
+
+    ## <class 'statsmodels.iolib.summary.Summary'>
+    ## """
+    ##                             OLS Regression Results                            
+    ## ==============================================================================
+    ## Dep. Variable:                    Q54   R-squared:                       0.668
+    ## Model:                            OLS   Adj. R-squared:                  0.658
+    ## Method:                 Least Squares   F-statistic:                     72.34
+    ## Date:                Tue, 23 Nov 2021   Prob (F-statistic):          9.22e-111
+    ## Time:                        15:06:02   Log-Likelihood:                -702.70
+    ## No. Observations:                 519   AIC:                             1435.
+    ## Df Residuals:                     504   BIC:                             1499.
+    ## Df Model:                          14                                         
+    ## Covariance Type:            nonrobust                                         
+    ## ==============================================================================
+    ##                  coef    std err          t      P>|t|      [0.025      0.975]
+    ## ------------------------------------------------------------------------------
+    ## Intercept      1.5191      0.416      3.655      0.000       0.703       2.336
+    ## Q62_1          0.0878      0.024      3.661      0.000       0.041       0.135
+    ## Q62_2          0.0151      0.032      0.472      0.637      -0.048       0.078
+    ## Q62_3          0.0361      0.037      0.971      0.332      -0.037       0.109
+    ## Q62_4          0.1211      0.028      4.335      0.000       0.066       0.176
+    ## Q62_5          0.2287      0.037      6.202      0.000       0.156       0.301
+    ## Q62_6          0.0008      0.027      0.029      0.977      -0.053       0.054
+    ## Q62_7          0.0376      0.030      1.271      0.204      -0.020       0.096
+    ## Q62_8         -0.0882      0.028     -3.096      0.002      -0.144      -0.032
+    ## Q62_9         -0.1192      0.037     -3.229      0.001      -0.192      -0.047
+    ## Q62_15        -0.0138      0.055     -0.253      0.800      -0.121       0.093
+    ## Q62_16         0.0834      0.053      1.581      0.115      -0.020       0.187
+    ## Q62_17         0.0379      0.029      1.287      0.199      -0.020       0.096
+    ## Q62_18         0.2516      0.041      6.069      0.000       0.170       0.333
+    ## Q62_19         0.0859      0.035      2.421      0.016       0.016       0.156
+    ## ==============================================================================
+    ## Omnibus:                       63.963   Durbin-Watson:                   2.012
+    ## Prob(Omnibus):                  0.000   Jarque-Bera (JB):              155.205
+    ## Skew:                          -0.644   Prob(JB):                     1.99e-34
+    ## Kurtosis:                       5.349   Cond. No.                         185.
+    ## ==============================================================================
+    ## 
+    ## Notes:
+    ## [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    ## """
+
+``` python
+res_children_discovery.summary()
+
+# validate
+```
+
+    ## <class 'statsmodels.iolib.summary.Summary'>
+    ## """
+    ##                             OLS Regression Results                            
+    ## ==============================================================================
+    ## Dep. Variable:               children   R-squared:                       0.592
+    ## Model:                            OLS   Adj. R-squared:                  0.580
+    ## Method:                 Least Squares   F-statistic:                     52.18
+    ## Date:                Tue, 23 Nov 2021   Prob (F-statistic):           1.52e-88
+    ## Time:                        15:06:02   Log-Likelihood:                -781.24
+    ## No. Observations:                 519   AIC:                             1592.
+    ## Df Residuals:                     504   BIC:                             1656.
+    ## Df Model:                          14                                         
+    ## Covariance Type:            nonrobust                                         
+    ## ==============================================================================
+    ##                  coef    std err          t      P>|t|      [0.025      0.975]
+    ## ------------------------------------------------------------------------------
+    ## Intercept      1.5483      0.483      3.202      0.001       0.598       2.498
+    ## Q62_1          0.1323      0.028      4.746      0.000       0.078       0.187
+    ## Q62_2          0.0326      0.037      0.875      0.382      -0.041       0.106
+    ## Q62_3          0.0403      0.043      0.931      0.353      -0.045       0.125
+    ## Q62_4          0.1197      0.033      3.682      0.000       0.056       0.184
+    ## Q62_5          0.1665      0.043      3.880      0.000       0.082       0.251
+    ## Q62_6         -0.0074      0.032     -0.235      0.814      -0.070       0.055
+    ## Q62_7          0.0455      0.034      1.325      0.186      -0.022       0.113
+    ## Q62_8         -0.0986      0.033     -2.977      0.003      -0.164      -0.034
+    ## Q62_9         -0.1512      0.043     -3.519      0.000      -0.236      -0.067
+    ## Q62_15        -0.0357      0.063     -0.561      0.575      -0.160       0.089
+    ## Q62_16         0.2045      0.061      3.331      0.001       0.084       0.325
+    ## Q62_17        -0.0174      0.034     -0.507      0.613      -0.085       0.050
+    ## Q62_18         0.1952      0.048      4.046      0.000       0.100       0.290
+    ## Q62_19         0.0864      0.041      2.093      0.037       0.005       0.167
+    ## ==============================================================================
+    ## Omnibus:                       73.318   Durbin-Watson:                   2.164
+    ## Prob(Omnibus):                  0.000   Jarque-Bera (JB):              173.041
+    ## Skew:                          -0.743   Prob(JB):                     2.66e-38
+    ## Kurtosis:                       5.407   Cond. No.                         185.
+    ## ==============================================================================
+    ## 
+    ## Notes:
+    ## [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    ## """
+
+``` python
+mod_own_validation = smf.ols(formula='Q54 ~ Q62_1 + Q62_2 + Q62_3 + Q62_4 + Q62_5 + Q62_6 + Q62_7 + Q62_8 + Q62_9 + Q62_15 + Q62_16 + Q62_17 + Q62_18 + Q62_19', data=validate)
+mod_children_validation = smf.ols(formula='children ~ Q62_1 + Q62_2 + Q62_3 + Q62_4 + Q62_5 + Q62_6 + Q62_7 + Q62_8 + Q62_9 + Q62_15 + Q62_16 + Q62_17 + Q62_18 + Q62_19', data=validate)
+res_own_validation = mod_own_validation.fit()
+res_children_validation = mod_children_validation.fit()
+
+res_own_validation.summary()
+```
+
+    ## <class 'statsmodels.iolib.summary.Summary'>
+    ## """
+    ##                             OLS Regression Results                            
+    ## ==============================================================================
+    ## Dep. Variable:                    Q54   R-squared:                       0.816
+    ## Model:                            OLS   Adj. R-squared:                  0.793
+    ## Method:                 Least Squares   F-statistic:                     36.39
+    ## Date:                Tue, 23 Nov 2021   Prob (F-statistic):           1.21e-35
+    ## Time:                        15:06:02   Log-Likelihood:                -140.50
+    ## No. Observations:                 130   AIC:                             311.0
+    ## Df Residuals:                     115   BIC:                             354.0
+    ## Df Model:                          14                                         
+    ## Covariance Type:            nonrobust                                         
+    ## ==============================================================================
+    ##                  coef    std err          t      P>|t|      [0.025      0.975]
+    ## ------------------------------------------------------------------------------
+    ## Intercept      0.6612      0.710      0.932      0.353      -0.745       2.067
+    ## Q62_1          0.0880      0.041      2.147      0.034       0.007       0.169
+    ## Q62_2          0.0460      0.050      0.925      0.357      -0.053       0.145
+    ## Q62_3          0.0908      0.062      1.466      0.145      -0.032       0.213
+    ## Q62_4          0.0927      0.050      1.836      0.069      -0.007       0.193
+    ## Q62_5          0.3559      0.069      5.159      0.000       0.219       0.493
+    ## Q62_6          0.0864      0.049      1.751      0.083      -0.011       0.184
+    ## Q62_7         -0.0526      0.049     -1.081      0.282      -0.149       0.044
+    ## Q62_8          0.0267      0.045      0.594      0.554      -0.062       0.116
+    ## Q62_9         -0.1399      0.062     -2.257      0.026      -0.263      -0.017
+    ## Q62_15         0.0944      0.085      1.112      0.269      -0.074       0.263
+    ## Q62_16        -0.0740      0.095     -0.776      0.439      -0.263       0.115
+    ## Q62_17         0.0699      0.049      1.425      0.157      -0.027       0.167
+    ## Q62_18         0.2914      0.079      3.708      0.000       0.136       0.447
+    ## Q62_19         0.0065      0.071      0.091      0.928      -0.134       0.147
+    ## ==============================================================================
+    ## Omnibus:                        6.765   Durbin-Watson:                   2.094
+    ## Prob(Omnibus):                  0.034   Jarque-Bera (JB):                7.715
+    ## Skew:                           0.341   Prob(JB):                       0.0211
+    ## Kurtosis:                       3.979   Cond. No.                         197.
+    ## ==============================================================================
+    ## 
+    ## Notes:
+    ## [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    ## """
+
+``` python
+res_children_validation.summary()
+```
+
+    ## <class 'statsmodels.iolib.summary.Summary'>
+    ## """
+    ##                             OLS Regression Results                            
+    ## ==============================================================================
+    ## Dep. Variable:               children   R-squared:                       0.702
+    ## Model:                            OLS   Adj. R-squared:                  0.665
+    ## Method:                 Least Squares   F-statistic:                     19.31
+    ## Date:                Tue, 23 Nov 2021   Prob (F-statistic):           5.70e-24
+    ## Time:                        15:06:02   Log-Likelihood:                -187.10
+    ## No. Observations:                 130   AIC:                             404.2
+    ## Df Residuals:                     115   BIC:                             447.2
+    ## Df Model:                          14                                         
+    ## Covariance Type:            nonrobust                                         
+    ## ==============================================================================
+    ##                  coef    std err          t      P>|t|      [0.025      0.975]
+    ## ------------------------------------------------------------------------------
+    ## Intercept      0.3342      1.016      0.329      0.743      -1.678       2.346
+    ## Q62_1          0.1779      0.059      3.033      0.003       0.062       0.294
+    ## Q62_2         -0.0339      0.071     -0.476      0.635      -0.175       0.107
+    ## Q62_3          0.0428      0.089      0.483      0.630      -0.133       0.218
+    ## Q62_4          0.1388      0.072      1.922      0.057      -0.004       0.282
+    ## Q62_5          0.3967      0.099      4.019      0.000       0.201       0.592
+    ## Q62_6          0.0824      0.071      1.166      0.246      -0.058       0.222
+    ## Q62_7          0.0272      0.070      0.391      0.697      -0.111       0.165
+    ## Q62_8         -0.1132      0.064     -1.762      0.081      -0.240       0.014
+    ## Q62_9         -0.0515      0.089     -0.581      0.563      -0.227       0.124
+    ## Q62_15        -0.1023      0.122     -0.841      0.402      -0.343       0.139
+    ## Q62_16         0.1248      0.137      0.914      0.363      -0.146       0.395
+    ## Q62_17         0.0645      0.070      0.919      0.360      -0.075       0.204
+    ## Q62_18         0.3423      0.112      3.044      0.003       0.120       0.565
+    ## Q62_19        -0.0945      0.102     -0.930      0.354      -0.296       0.107
+    ## ==============================================================================
+    ## Omnibus:                       23.808   Durbin-Watson:                   1.983
+    ## Prob(Omnibus):                  0.000   Jarque-Bera (JB):               74.383
+    ## Skew:                          -0.591   Prob(JB):                     7.05e-17
+    ## Kurtosis:                       6.512   Cond. No.                         197.
+    ## ==============================================================================
+    ## 
+    ## Notes:
+    ## [1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+    ## """
+
+### Plot own&children\~general beliefs and attitudes
+
+``` python
+#thanks to https://github.com/tobywise/covid19-risk-perception
+
+# labels
+names = ['A coronavirus vaccination should be mandatory for everyone who is able to have it','Without a coronavirus vaccine, I am likely to catch coronavirus','If I get a coronavirus vaccination, I will be protected against coronavirus','If I don’t get a coronavirus vaccination and end up getting coronavirus, I would regret not getting the vaccination','It would be very easy for me to have a coronavirus vaccination','A coronavirus vaccination could give me coronavirus','I would be worried about experiencing side effects from a coronavirus vaccination','I might regret getting a coronavirus vaccination if I later experienced side effects from the vaccination','A coronavirus vaccination will be too new for me to be confident about getting vaccinated','My family would approve of my having a coronavirus vaccination','My friends would approve of my having a coronavirus vaccination','If a coronavirus vaccination were recommended by the Government, I would get vaccinated','If a coronavirus vaccination were recommended by a health care professional (e.g. GP or nurse), I would get vaccinated','A coronavirus vaccine will allow us to get back to ‘normal’']
+
+# font type & size
+plt.rcParams.update({'font.size': 12})
+plt.rcParams["font.family"] = "Times New Roman"
+
+# plot
+f, ax = plt.subplots(1, 2, figsize=(14, 10))
+
+# DISCOVERY
+ax[0].axvline(0, linestyle=':', color='gray', linewidth=2)
+
+# Points and error bars
+```
+
+    ## <matplotlib.lines.Line2D object at 0x0000000140BD0370>
+
+``` python
+ax[0].errorbar(y=np.arange(len(res_own_discovery.params[1:])) - 0.1, x=res_own_discovery.params[1:], 
+             xerr=np.abs(res_own_discovery.conf_int().values[1:, :] - res_own_discovery.params[1:, np.newaxis]).T, 
+             color='gray', linewidth=2, fmt='^', label='own')
+```
+
+    ## <ErrorbarContainer object of 3 artists>
+    ## 
+    ## <string>:2: FutureWarning: Support for multi-dimensional indexing (e.g. `obj[:, None]`) is deprecated and will be removed in a future version.  Convert to a numpy array before indexing instead.
+
+``` python
+ax[0].errorbar(y=np.arange(len(res_children_discovery.params[1:])) + 0.1, x=res_children_discovery.params[1:], 
+             xerr=np.abs(res_children_discovery.conf_int().values[1:, :] - res_children_discovery.params[1:, np.newaxis]).T, 
+             color='black', linewidth=2, fmt='s', label='children')
+
+# Labels
+```
+
+    ## <ErrorbarContainer object of 3 artists>
+    ## 
+    ## <string>:2: FutureWarning: Support for multi-dimensional indexing (e.g. `obj[:, None]`) is deprecated and will be removed in a future version.  Convert to a numpy array before indexing instead.
+
+``` python
+ax[0].set_yticks(range(len(names)))
+```
+
+    ## [<matplotlib.axis.YTick object at 0x0000000140B94370>, <matplotlib.axis.YTick object at 0x0000000140B80BB0>, <matplotlib.axis.YTick object at 0x000000013698DFA0>, <matplotlib.axis.YTick object at 0x0000000140BFC670>, <matplotlib.axis.YTick object at 0x0000000140C8C6A0>, <matplotlib.axis.YTick object at 0x0000000140C8CDF0>, <matplotlib.axis.YTick object at 0x0000000140C8C9D0>, <matplotlib.axis.YTick object at 0x0000000140C93460>, <matplotlib.axis.YTick object at 0x0000000140C93BB0>, <matplotlib.axis.YTick object at 0x0000000140C9A340>, <matplotlib.axis.YTick object at 0x0000000140C9AA90>, <matplotlib.axis.YTick object at 0x0000000140D10340>, <matplotlib.axis.YTick object at 0x0000000140C9ADC0>, <matplotlib.axis.YTick object at 0x0000000140C93C10>]
+
+``` python
+ax[0].set_yticklabels(['\n'.join(textwrap.wrap(q, 60, break_long_words=False)) for q in names])
+
+## Titles 
+```
+
+    ## [Text(0, 0, 'A coronavirus vaccination should be mandatory for everyone\nwho is able to have it'), Text(0, 1, 'Without a coronavirus vaccine, I am likely to catch\ncoronavirus'), Text(0, 2, 'If I get a coronavirus vaccination, I will be protected\nagainst coronavirus'), Text(0, 3, 'If I don’t get a coronavirus vaccination and end up getting\ncoronavirus, I would regret not getting the vaccination'), Text(0, 4, 'It would be very easy for me to have a coronavirus\nvaccination'), Text(0, 5, 'A coronavirus vaccination could give me coronavirus'), Text(0, 6, 'I would be worried about experiencing side effects from a\ncoronavirus vaccination'), Text(0, 7, 'I might regret getting a coronavirus vaccination if I later\nexperienced side effects from the vaccination'), Text(0, 8, 'A coronavirus vaccination will be too new for me to be\nconfident about getting vaccinated'), Text(0, 9, 'My family would approve of my having a coronavirus\nvaccination'), Text(0, 10, 'My friends would approve of my having a coronavirus\nvaccination'), Text(0, 11, 'If a coronavirus vaccination were recommended by the\nGovernment, I would get vaccinated'), Text(0, 12, 'If a coronavirus vaccination were recommended by a health\ncare professional (e.g. GP or nurse), I would get vaccinated'), Text(0, 13, 'A coronavirus vaccine will allow us to get back to ‘normal’')]
+
+``` python
+ax[0].set_title("Attitudes and beliefs on vaccination intention\nestimation set (${n}$ = 519)")
+```
+
+    ## Text(0.5, 1.0, 'Attitudes and beliefs on vaccination intention\nestimation set (${n}$ = 519)')
+
+``` python
+ax[0].set_xlabel('Regression coefficient (+/- 95% CI)')
+```
+
+    ## Text(0.5, 0, 'Regression coefficient (+/- 95% CI)')
+
+``` python
+ax[0].legend()
+
+# Validation
+```
+
+    ## <matplotlib.legend.Legend object at 0x0000000140B9A550>
+
+``` python
+ax[1].axvline(0, linestyle=':', color='gray', linewidth=2)
+```
+
+    ## <matplotlib.lines.Line2D object at 0x0000000140C8CFA0>
+
+``` python
+ax[1].errorbar(y=np.arange(len(res_own_validation.params[1:])) - 0.1, x=res_own_validation.params[1:], 
+             xerr=np.abs(res_own_validation.conf_int().values[1:, :] - res_own_validation.params[1:, np.newaxis]).T, 
+             color='gray', linewidth=2, fmt='^', label='own')
+```
+
+    ## <ErrorbarContainer object of 3 artists>
+    ## 
+    ## <string>:2: FutureWarning: Support for multi-dimensional indexing (e.g. `obj[:, None]`) is deprecated and will be removed in a future version.  Convert to a numpy array before indexing instead.
+
+``` python
+ax[1].errorbar(y=np.arange(len(res_children_validation.params[1:])) + 0.1, x=res_children_validation.params[1:], 
+             xerr=np.abs(res_children_validation.conf_int().values[1:, :] - res_children_validation.params[1:, np.newaxis]).T, 
+             color='black', linewidth=2, fmt='s', label='children')
+
+# Labels
+```
+
+    ## <ErrorbarContainer object of 3 artists>
+    ## 
+    ## <string>:2: FutureWarning: Support for multi-dimensional indexing (e.g. `obj[:, None]`) is deprecated and will be removed in a future version.  Convert to a numpy array before indexing instead.
+
+``` python
+ax[1].set_yticks([])
+
+# Titles 
+```
+
+    ## []
+
+``` python
+ax[1].set_title("Attitudes and beliefs on vaccination intention\nvalidation set (${n}$ = 130)")
+```
+
+    ## Text(0.5, 1.0, 'Attitudes and beliefs on vaccination intention\nvalidation set (${n}$ = 130)')
+
+``` python
+ax[1].set_xlabel('Regression coefficient (+/- 95% CI)')
+```
+
+    ## Text(0.5, 0, 'Regression coefficient (+/- 95% CI)')
+
+``` python
+ax[1].legend()
+```
+
+    ## <matplotlib.legend.Legend object at 0x0000000140BD0D90>
+
+``` python
+plt.tight_layout()
+
+plt.gcf().subplots_adjust(left=0.35)
+
+plt.show()
+```
+
+![](rmarkdown_vaccination_git_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+
+### preprocessing ML model
+
+``` python
+# select features and target
+vac_ml = vac_2[['Q62_1','Q62_4','Q62_5','Q62_8','Q62_9','Q62_18','Q54']]
+
+# rename col
+vac_ml = vac_ml.rename(columns = {'Q62_1': 'vaccine should be mandatory','Q62_8' : 'regret of having the vaccine in case of side effects', 'Q62_4': 'likely to catch COVID-19 without the vaccine', 'Q62_9' : 'vaccine is too recent', 'Q62_18':'vaccine recommended by health care workers','Q62_5' : 'easy to have the vaccine', 'Q54' : 'Q54'}, inplace = False)
+
+# target distribution
+vac_ml['Q54'] = pd.cut(vac_ml.Q54,bins=[0,3,6,7],labels=['1','2','3'])
+#sns.countplot(x=vac_ml['Q54'])
+
+# features
+X = vac_ml.drop('Q54' , axis = 1)
+
+# target
+y = vac_ml['Q54']
+
+# train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# feature scaling
+sc = StandardScaler()
+X_train = sc.fit_transform(X_train)
+X_test = sc.transform(X_test)
+```
+
+### hyperparameter tuning
+
+``` python
+# classifier
+mlpc = MLPClassifier()
+
+# parameter space
+parameter_space = {
+    'max_iter': [1000, 1200],
+    'hidden_layer_sizes': [(3), (3,2), (4)],
+    'activation': ['tanh', 'relu'],
+    'solver': ['sgd', 'adam'],
+    'alpha': [0.0001, 0.05],
+}
+
+# grid search
+clf = GridSearchCV(mlpc, parameter_space, n_jobs=-1, cv=3, scoring='accuracy')
+clf.fit(X_train, y_train)
+```
+
+    ## GridSearchCV(cv=3, estimator=MLPClassifier(), n_jobs=-1,
+    ##              param_grid={'activation': ['tanh', 'relu'],
+    ##                          'alpha': [0.0001, 0.05],
+    ##                          'hidden_layer_sizes': [3, (3, 2), 4],
+    ##                          'max_iter': [1000, 1200], 'solver': ['sgd', 'adam']},
+    ##              scoring='accuracy')
+
+### ANN
+
+``` python
+# classifier 
+mlpc = MLPClassifier(hidden_layer_sizes=3, alpha= 0.0001, max_iter=1000, activation='relu', solver = 'adam', random_state=7)
+mlpc.fit(X_train, y_train)
+```
+
+    ## MLPClassifier(hidden_layer_sizes=3, max_iter=1000, random_state=7)
+
+``` python
+pred_mlpc=mlpc.predict(X_test)
+
+#metrics
+print(classification_report(y_test, pred_mlpc))
+
+# confusion matrix
+```
+
+    ##               precision    recall  f1-score   support
+    ## 
+    ##            1       1.00      0.79      0.88        14
+    ##            2       0.71      0.71      0.71        34
+    ##            3       0.88      0.91      0.90        82
+    ## 
+    ##     accuracy                           0.85       130
+    ##    macro avg       0.86      0.80      0.83       130
+    ## weighted avg       0.85      0.85      0.85       130
+
+``` python
+y_true, y_pred = y_test , clf.predict(X_test)
+
+ax = plt.axes()
+sns.heatmap(
+    confusion_matrix(y_test, mlpc.predict(X_test)),
+    cmap="YlGnBu",
+    ax=ax,
+    center=0,
+    fmt=".0f",
+    square=True,
+    linewidths=0.5,
+    annot=True,  
+)
+```
+
+    ## <AxesSubplot:>
+
+``` python
+ax.set(xlabel='predicted', ylabel='actual', title='confusion matrix')
+```
+
+    ## [Text(0.5, 139.93524305555556, 'predicted'), Text(573.4027777777777, 0.5, 'actual'), Text(0.5, 1.0, 'confusion matrix')]
+
+``` python
+ax.set_yticklabels(('low', 'moderate', 'high'), 
+    rotation=0, va="center")
+```
+
+    ## [Text(0, 0.5, 'low'), Text(0, 1.5, 'moderate'), Text(0, 2.5, 'high')]
+
+``` python
+ax.set_xticklabels(('low', 'moderate', 'high'), 
+    rotation=0, va="center")
+    
+```
+
+    ## [Text(0.5, 0, 'low'), Text(1.5, 0, 'moderate'), Text(2.5, 0, 'high')]
+
+``` python
+plt.show()
+```
+
+![](rmarkdown_vaccination_git_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+
+### feature importance
+
+    ## <Figure size 750x375 with 0 Axes>
+
+    ## <BarContainer object of 6 artists>
+
+    ## ([<matplotlib.axis.YTick object at 0x0000000140D472B0>, <matplotlib.axis.YTick object at 0x0000000140D47670>, <matplotlib.axis.YTick object at 0x0000000141F29B80>, <matplotlib.axis.YTick object at 0x000000013EB2EB50>, <matplotlib.axis.YTick object at 0x000000013EB48580>, <matplotlib.axis.YTick object at 0x000000013EB48CD0>], [Text(0, 0, '1'), Text(0, 1, '2'), Text(0, 2, '3'), Text(0, 3, '4'), Text(0, 4, '5'), Text(0, 5, '6')])
+
+    ## Text(0, 0.5, 'Feature')
+
+    ## Text(0.5, 0, 'Importance')
+
+    ## Text(0.5, 1.0, 'Feature Importance (Vaccination Intention)')
+
+<img src="rmarkdown_vaccination_git_files/figure-gfm/unnamed-chunk-34-1.png" style="display: block; margin: auto;" />
+
+### 10-fold validation: comaprison with other ML models
+
+``` python
+# models 
+rfc = RandomForestClassifier(n_estimators=200, max_features=1)
+clf = svm.SVC()
+lgr = LogisticRegression()
+
+models = []
+models.append(('RFC', rfc))
+models.append(('SCV',clf))
+models.append(('LGR', lgr))
+models.append(('MLPC', mlpc))
+print(models)
+
+# compare model results
+```
+
+    ## [('RFC', RandomForestClassifier(max_features=1, n_estimators=200)), ('SCV', SVC()), ('LGR', LogisticRegression()), ('MLPC', MLPClassifier(hidden_layer_sizes=3, max_iter=1000, random_state=7))]
+
+``` python
+results = dict()
+for name, model in models:
+    kfold = KFold(n_splits=10, random_state=10, shuffle=True)
+    cv_results = cross_val_score(model, X_train, y_train, cv=kfold, scoring='accuracy')
+    results[name]=(cv_results.mean(), cv_results.std())
+    
+    print()
+    print("name    results.mean       results.std")
+    for key, value in results.items():
+        print(key, value)
+```
+
+    ## 
+    ## name    results.mean       results.std
+    ## RFC (0.7803167420814479, 0.0700623612569281)
+    ## 
+    ## name    results.mean       results.std
+    ## RFC (0.7803167420814479, 0.0700623612569281)
+    ## SCV (0.7900075414781297, 0.04492830453137671)
+    ## 
+    ## name    results.mean       results.std
+    ## RFC (0.7803167420814479, 0.0700623612569281)
+    ## SCV (0.7900075414781297, 0.04492830453137671)
+    ## LGR (0.7899321266968325, 0.054211492089524624)
+    ## 
+    ## name    results.mean       results.std
+    ## RFC (0.7803167420814479, 0.0700623612569281)
+    ## SCV (0.7900075414781297, 0.04492830453137671)
+    ## LGR (0.7899321266968325, 0.054211492089524624)
+    ## MLPC (0.795814479638009, 0.04545273644099338)
